@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # template-project
 
 > 🧪 A modern Python template for scientific projects — with clean code, automated tests, documentation, citation, and publication tools, ready out-of-the-box.
@@ -110,3 +111,7 @@ I'll also (once I know how) add instructions for how to publish the package to c
 
 This repository includes a `CITATION.cff` file so that users of this template can include one in their own project.  
 There is no need to cite this repository directly.
+=======
+# time-lag
+This project is about analysing the time-lag correlation between atmospheric/oceanic forcings and the turbulent response in the oceanic mixed layer.
+>>>>>>> origin/main

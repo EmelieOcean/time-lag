@@ -71,7 +71,7 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Users' guide</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../demo-output.html">template-project demo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../demo-output.html">Time-lag correlation</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Help and reference</span></p>
 <ul>
@@ -113,7 +113,7 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">template_project</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">template_project.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_info</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">template_project.read_rapid</span><span class="w"> </span><span class="kn">import</span> <span class="n">read_rapid</span>
+<span class="c1"># from template_project.read_rapid import read_rapid</span>
 
 <span class="n">log</span> <span class="o">=</span> <span class="n">logger</span><span class="o">.</span><span class="n">log</span>
 
@@ -138,7 +138,7 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">readers</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;rapid&quot;</span><span class="p">:</span> <span class="n">read_rapid</span><span class="p">,</span>
+        <span class="s2">&quot;churchill&quot;</span><span class="p">:</span> <span class="n">read_glider</span><span class="p">,</span>
     <span class="p">}</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">readers</span><span class="p">[</span><span class="n">array_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
@@ -150,11 +150,11 @@
 
 <div class="viewcode-block" id="load_sample_dataset">
 <a class="viewcode-back" href="../../template_project.html#template_project.readers.load_sample_dataset">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">load_sample_dataset</span><span class="p">(</span><span class="n">array_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;rapid&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_sample_dataset</span><span class="p">(</span><span class="n">array_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;churchill&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load a sample dataset for quick testing.</span>
 
 <span class="sd">    Currently supports:</span>
-<span class="sd">    - &#39;rapid&#39; : loads the &#39;RAPID_26N_TRANSPORT.nc&#39; file</span>
+<span class="sd">    - &#39;churchill&#39; : loads the &#39;20240524-noc-churchill398-20211210_MLD_demo.nc&#39; file</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -172,8 +172,8 @@
 <span class="sd">        If the array_name is not recognised.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">array_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;rapid&quot;</span><span class="p">:</span>
-        <span class="n">sample_file</span> <span class="o">=</span> <span class="s2">&quot;moc_transports.nc&quot;</span>
+    <span class="k">if</span> <span class="n">array_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;churchill&quot;</span><span class="p">:</span>
+        <span class="n">sample_file</span> <span class="o">=</span> <span class="s2">&quot;20240524-noc-churchill398-20211210_MLD_demo.nc&quot;</span>
         <span class="n">datasets</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span>
             <span class="n">array_name</span><span class="o">=</span><span class="n">array_name</span><span class="p">,</span>
             <span class="n">file_list</span><span class="o">=</span><span class="n">sample_file</span><span class="p">,</span>
@@ -187,7 +187,7 @@
 
     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
         <span class="sa">f</span><span class="s2">&quot;Sample dataset for array &#39;</span><span class="si">{</span><span class="n">array_name</span><span class="si">}</span><span class="s2">&#39; is not defined. &quot;</span>
-        <span class="s2">&quot;Currently only &#39;rapid&#39; is supported.&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Currently only &#39;churchill&#39; is supported.&quot;</span><span class="p">,</span>
     <span class="p">)</span></div>
 
 
@@ -208,7 +208,7 @@
 <span class="sd">    ----------</span>
 <span class="sd">    array_name : str</span>
 <span class="sd">        The name of the observing array to load. Options are:</span>
-<span class="sd">        - &#39;rapid&#39; : RAPID 26N array</span>
+<span class="sd">        - &#39;churchill&#39; : glider data from churchill398, Canada.</span>
 <span class="sd">    source : str, optional</span>
 <span class="sd">        URL or local path to the data source.</span>
 <span class="sd">        If None, the reader-specific default source will be used.</span>
@@ -298,6 +298,33 @@
 
     <span class="c1"># Write to log</span>
     <span class="n">log_info</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">summary</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="read_glider">
+<a class="viewcode-back" href="../../template_project.html#template_project.readers.read_glider">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">read_glider</span><span class="p">(</span><span class="n">array_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;churchill&quot;</span><span class="p">):</span>
+    <span class="n">datadirec</span> <span class="o">=</span> <span class="s1">&#39;../data/&#39;</span>
+    <span class="c1"># L1 data containing vertical velocities</span>
+    <span class="n">L1398_w</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="n">datadirec</span> <span class="o">+</span> <span class="s1">&#39;20240524-noc-churchill398-20211210_MLD_demo.nc&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">L1398_w</span></div>
+
+
+<div class="viewcode-block" id="read_ERA5">
+<a class="viewcode-back" href="../../template_project.html#template_project.readers.read_ERA5">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">read_ERA5</span><span class="p">():</span>
+    <span class="n">datadirec</span> <span class="o">=</span> <span class="s1">&#39;../data/&#39;</span>
+    <span class="n">ds_wind</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">open_dataset</span><span class="p">(</span><span class="n">datadirec</span> <span class="o">+</span> <span class="s1">&#39;wind_data_labsea_2021_2022_demo.nc&#39;</span><span class="p">)</span>
+    <span class="n">ds_heat</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">open_dataset</span><span class="p">(</span><span class="n">datadirec</span> <span class="o">+</span> <span class="s1">&#39;heat_data_labsea_2021_2022_demo.nc&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ds_wind</span><span class="p">,</span> <span class="n">ds_heat</span></div>
+
+
+<div class="viewcode-block" id="read_hp_w">
+<a class="viewcode-back" href="../../template_project.html#template_project.readers.read_hp_w">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">read_hp_w</span><span class="p">():</span>
+    <span class="n">datadirec</span> <span class="o">=</span> <span class="s1">&#39;../data/&#39;</span>
+    <span class="n">ds</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="n">datadirec</span> <span class="o">+</span> <span class="s1">&#39;20240524-noc-churchill398-20211210_w_uniform_70m_highpass_demo.nc&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ds</span></div>
+
 </pre></div>
 
            </div>

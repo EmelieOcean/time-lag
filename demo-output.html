@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>template-project demo &mdash; template_project v0.0.0 documentation</title>
+  <title>Time-lag correlation &mdash; template_project v0.0.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="_static/nbsphinx-code-cells.css?v=2aa19091" />
@@ -75,7 +75,14 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Users' guide</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">template-project demo</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Time-lag correlation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#Load-data">Load data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Plot-steps-of-calculating-the-vertical-water-velocity-variance">Plot steps of calculating the vertical water velocity variance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Calculate-&amp;-Plot-time-lag-correlations">Calculate &amp; Plot time-lag correlations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Plot-time-series-against-each-other">Plot time series against each other</a></li>
+</ul>
+</li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Help and reference</span></p>
 <ul>
@@ -98,7 +105,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">template-project demo</li>
+      <li class="breadcrumb-item active">Time-lag correlation</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/demo-output.ipynb.txt" rel="nofollow"> View page source</a>
       </li>
@@ -108,138 +115,281 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="template-project-demo">
-<h1>template-project demo<a class="headerlink" href="#template-project-demo" title="Link to this heading"></a></h1>
-<p>The purpose of this notebook is to demonstrate the functionality of <code class="docutils literal notranslate"><span class="pre">template-project</span></code>.</p>
+  <section id="Time-lag-correlation">
+<h1>Time-lag correlation<a class="headerlink" href="#Time-lag-correlation" title="Link to this heading"></a></h1>
+<p>The purpose of this notebook is to demonstrate the functionality of <code class="docutils literal notranslate"><span class="pre">time-lag</span></code>.</p>
 <p>The demo is organised to show</p>
 <ul class="simple">
-<li><p>Step 1: Explanation</p></li>
-<li><p>Step 2: Explanation</p></li>
+<li><p>Step 1: The steps of calculating the vertical velocity variance</p></li>
+<li><p>Step 2: Correlations of vertical velocity variance and atmospheric data</p></li>
 </ul>
 <p>Note that when you submit a pull request, you should <code class="docutils literal notranslate"><span class="pre">clear</span> <span class="pre">all</span> <span class="pre">outputs</span></code> from your python notebook for a cleaner merge.</p>
-<div class="nbinput nblast docutils container">
+<div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;../&#39;</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">template_project</span><span class="w"> </span><span class="kn">import</span> <span class="n">plotters</span><span class="p">,</span> <span class="n">tools</span><span class="p">,</span> <span class="n">utilities</span><span class="p">,</span> <span class="n">writers</span><span class="p">,</span> <span class="n">readers</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">template_project</span><span class="w"> </span><span class="kn">import</span> <span class="n">plotters</span><span class="p">,</span> <span class="n">readers</span><span class="p">,</span> <span class="n">tools</span><span class="p">,</span> <span class="n">utilities</span><span class="p">,</span> <span class="n">writers</span>
-<br/></pre></div>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># After editing your_module_name.py, reload it:</span>
+<span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">plotters</span><span class="p">)</span>
+</pre></div>
 </div>
 </div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">ModuleNotFoundError</span>                       Traceback (most recent call last)
+<span class="ansi-cyan-fg">Cell</span><span class="ansi-cyan-fg"> </span><span class="ansi-green-fg">In[1]</span><span class="ansi-green-fg">, line 3</span>
+<span class="ansi-green-fg">      1</span> <span class="ansi-bold" style="color: rgb(0,135,0)">import</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-blue-intense-fg ansi-bold">sys</span>
+<span class="ansi-green-fg">      2</span> sys.path.append(<span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">../</span><span class="ansi-yellow-fg">&#39;</span>)
+<span class="ansi-green-fg">----&gt; </span><span class="ansi-green-fg">3</span> <span class="ansi-bold" style="color: rgb(0,135,0)">from</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-blue-intense-fg ansi-bold">template_project</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-bold" style="color: rgb(0,135,0)">import</span> plotters, tools, utilities, writers, readers
+<span class="ansi-green-fg">      4</span> <span class="ansi-bold" style="color: rgb(0,135,0)">import</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-blue-intense-fg ansi-bold">importlib</span>
+<span class="ansi-green-fg">      6</span> <span class="ansi-bold" style="color: rgb(0,135,0)">import</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-blue-intense-fg ansi-bold">pandas</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-bold" style="color: rgb(0,135,0)">as</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-blue-intense-fg ansi-bold">pd</span>
+
+<span class="ansi-cyan-fg">File </span><span class="ansi-green-fg">~/work/time-lag/time-lag/notebooks/../template_project/tools.py:3</span>
+<span class="ansi-green-fg">      1</span> <span class="ansi-bold" style="color: rgb(0,135,0)">import</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-blue-intense-fg ansi-bold">numpy</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-bold" style="color: rgb(0,135,0)">as</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-blue-intense-fg ansi-bold">np</span>
+<span class="ansi-green-fg">      2</span> <span class="ansi-bold" style="color: rgb(0,135,0)">from</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-blue-intense-fg ansi-bold">scipy</span><span class="ansi-blue-intense-fg ansi-bold">.</span><span class="ansi-blue-intense-fg ansi-bold">stats</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-bold" style="color: rgb(0,135,0)">import</span> pearsonr, norm, probplot, jarque_bera, shapiro, kstest
+<span class="ansi-green-fg">----&gt; </span><span class="ansi-green-fg">3</span> <span class="ansi-bold" style="color: rgb(0,135,0)">import</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-blue-intense-fg ansi-bold">statsmodels</span><span class="ansi-blue-intense-fg ansi-bold">.</span><span class="ansi-blue-intense-fg ansi-bold">api</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-bold" style="color: rgb(0,135,0)">as</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-blue-intense-fg ansi-bold">sm</span>
+<span class="ansi-green-fg">      4</span> <span class="ansi-bold" style="color: rgb(0,135,0)">import</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-blue-intense-fg ansi-bold">pandas</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-bold" style="color: rgb(0,135,0)">as</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-blue-intense-fg ansi-bold">pd</span>
+<span class="ansi-green-fg">      5</span> <span class="ansi-bold" style="color: rgb(0,135,0)">import</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-blue-intense-fg ansi-bold">xarray</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-bold" style="color: rgb(0,135,0)">as</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-blue-intense-fg ansi-bold">xr</span>
+
+<span class="ansi-red-fg">ModuleNotFoundError</span>: No module named &#39;statsmodels&#39;
+</pre></div></div>
+</div>
+<section id="Load-data">
+<h2>Load data<a class="headerlink" href="#Load-data" title="Link to this heading"></a></h2>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ds</span> <span class="o">=</span> <span class="n">readers</span><span class="o">.</span><span class="n">load_sample_dataset</span><span class="p">()</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load gliderdata of churchill (containing w, MLD from a density threshold (0.01) and MLD_manually selected)</span>
+<span class="n">ds</span>                  <span class="o">=</span> <span class="n">proj</span><span class="o">.</span><span class="n">readers</span><span class="o">.</span><span class="n">read_glider</span><span class="p">(</span><span class="s1">&#39;churchill&#39;</span><span class="p">)</span>
+<span class="c1"># Load ERA5 datasets in the LabSea of years 2021/2022</span>
+<span class="n">ds_wind</span><span class="p">,</span> <span class="n">ds_heat</span>    <span class="o">=</span> <span class="n">proj</span><span class="o">.</span><span class="n">readers</span><span class="o">.</span><span class="n">read_ERA5</span><span class="p">()</span>
+<span class="c1"># Load high pass filtered vertical velocity data from churchill</span>
+<span class="n">ds_hp</span>               <span class="o">=</span> <span class="n">proj</span><span class="o">.</span><span class="n">readers</span><span class="o">.</span><span class="n">read_hp_w</span><span class="p">()</span>
 </pre></div>
 </div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area stderr docutils container">
-<div class="highlight"><pre>
-20250626T120532 INFO     setup_logger Logger initialized for array: rapid, writing to /home/runner/work/time-lag/time-lag/logs/RAPID_20250626T12_read.log
-20250626T120532 INFO     load_dataset Loading dataset for array: rapid
-20250626T120532 INFO     read_rapid Starting to read RAPID dataset
-20250626T120532 INFO     resolve_file_path Using cached file: /home/runner/work/time-lag/time-lag/data/moc_transports.nc
-20250626T120532 INFO     read_rapid Opening RAPID dataset: /home/runner/work/time-lag/time-lag/data/moc_transports.nc
-20250626T120533 INFO     read_rapid Attaching metadata to RAPID dataset from file: moc_transports.nc
-20250626T120533 INFO     read_rapid Renaming &#39;time&#39; dimension/coordinate to &#39;TIME&#39;
-20250626T120533 INFO     read_rapid Successfully loaded 1 RAPID dataset(s)
-20250626T120533 INFO     load_dataset Successfully loaded 1 dataset(s) for array: rapid
-20250626T120533 INFO     _summarise_datasets
-Summary for array &#39;rapid&#39;:
-Total datasets loaded: 1
-
-Dataset 1:
-  Source file: moc_transports.nc
-  Time coverage: 2004-04-02 to 2023-02-11
-  Dimensions:
-    - TIME: 13779
-  Variables:
-    - t_therm10: shape (13779,)
-    - t_aiw10: shape (13779,)
-    - t_ud10: shape (13779,)
-    - t_ld10: shape (13779,)
-    - t_bw10: shape (13779,)
-    - t_gs10: shape (13779,)
-    - t_ek10: shape (13779,)
-    - t_umo10: shape (13779,)
-    - moc_mar_hc10: shape (13779,)
-
-</pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Summary for array &#39;rapid&#39;:
-Total datasets loaded: 1
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+<span class="ansi-cyan-fg">Cell</span><span class="ansi-cyan-fg"> </span><span class="ansi-green-fg">In[2]</span><span class="ansi-green-fg">, line 2</span>
+<span class="ansi-green-fg">      1</span> <span style="color: rgb(95,135,135)"># Load gliderdata of churchill (containing w, MLD from a density threshold (0.01) and MLD_manually selected)</span>
+<span class="ansi-green-fg">----&gt; </span><span class="ansi-green-fg">2</span> ds                  = <span class="ansi-yellow-bg">proj</span>.readers.read_glider(<span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">churchill</span><span class="ansi-yellow-fg">&#39;</span>)
+<span class="ansi-green-fg">      3</span> <span style="color: rgb(95,135,135)"># Load ERA5 datasets in the LabSea of years 2021/2022</span>
+<span class="ansi-green-fg">      4</span> ds_wind, ds_heat    = proj.readers.read_ERA5()
 
-Dataset 1:
-  Source file: moc_transports.nc
-  Time coverage: 2004-04-02 to 2023-02-11
-  Dimensions:
-    - TIME: 13779
-  Variables:
-    - t_therm10: shape (13779,)
-    - t_aiw10: shape (13779,)
-    - t_ud10: shape (13779,)
-    - t_ld10: shape (13779,)
-    - t_bw10: shape (13779,)
-    - t_gs10: shape (13779,)
-    - t_ek10: shape (13779,)
-    - t_umo10: shape (13779,)
-    - moc_mar_hc10: shape (13779,)
-
+<span class="ansi-red-fg">NameError</span>: name &#39;proj&#39; is not defined
 </pre></div></div>
 </div>
+</section>
+<section id="Configuration">
+<h2>Configuration<a class="headerlink" href="#Configuration" title="Link to this heading"></a></h2>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plotters</span><span class="o">.</span><span class="n">plot_monthly_transport</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><br/><span></span><span class="n">min_perc</span> <span class="o">=</span> <span class="mf">0.3</span>          <span class="c1"># Minimum percentage of data within the rolling window at most common resolution</span>
+<span class="n">outer_window_min</span> <span class="o">=</span> <span class="mi">60</span><span class="o">*</span><span class="mi">6</span> <span class="c1"># Outer window size in minutes</span>
+<span class="n">inner_window_min</span> <span class="o">=</span> <span class="mi">5</span>    <span class="c1"># Inner window size in minutes</span>
+<span class="n">resolution</span> <span class="o">=</span> <span class="mi">1</span>          <span class="c1"># Sampling resolution in seconds (needed to calc the minimum number of observations in a rolling window)</span>
+<span class="n">glidername</span><span class="o">=</span> <span class="s1">&#39;L1398&#39;</span>     <span class="c1"># Name of the glider</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;rolling_window_outer&quot;</span>     <span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">outer_window_min</span><span class="si">}</span><span class="s2">min&quot;</span><span class="p">,</span>           <span class="c1"># 6H choosen by Steffen</span>
+    <span class="s2">&quot;rolling_window_inner&quot;</span>     <span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">inner_window_min</span><span class="si">}</span><span class="s2">min&quot;</span><span class="p">,</span>           <span class="c1"># 1H, choosen by steffen&#39;s</span>
+    <span class="s2">&quot;rolling_min_periods_outer&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">outer_window_min</span><span class="o">*</span><span class="n">min_perc</span><span class="o">*</span><span class="mi">60</span><span class="p">),</span>  <span class="c1"># Minimum number of observations within the outer rolling window (data before: in hours or see inner window)</span>
+    <span class="s2">&quot;rolling_min_periods_inner&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">((</span><span class="n">inner_window_min</span><span class="o">/</span><span class="mi">60</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">3600</span><span class="o">*</span><span class="mi">1</span><span class="o">/</span><span class="n">resolution</span><span class="p">)</span><span class="o">*</span><span class="n">min_perc</span><span class="p">),</span>  <span class="c1"># Minimum number of observations within the inner rolling window (data before: in seconds or see most common time difference)</span>
+
+    <span class="s2">&quot;var&quot;</span>               <span class="p">:</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span>
+    <span class="s2">&quot;data_in&quot;</span>           <span class="p">:</span> <span class="n">ds</span><span class="p">,</span>
+    <span class="s2">&quot;data_wind&quot;</span>         <span class="p">:</span> <span class="n">ds_wind</span><span class="p">,</span>
+    <span class="s2">&quot;data_heat&quot;</span>         <span class="p">:</span> <span class="n">ds_heat</span><span class="p">,</span>
+    <span class="s2">&quot;start_time&quot;</span>        <span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="s1">&#39;2022-03-07T00:00:00&#39;</span><span class="p">),</span>
+    <span class="s2">&quot;end_time&quot;</span>          <span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="s1">&#39;2022-03-15T00:00:00&#39;</span><span class="p">),</span>
+    <span class="s2">&quot;interp_method&quot;</span>     <span class="p">:</span> <span class="s2">&quot;linear&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;depth_min&quot;</span>         <span class="p">:</span> <span class="mi">50</span><span class="p">,</span>  <span class="c1"># Drop upper 50m (wave effects, etc.)</span>
+    <span class="s2">&quot;max_lag&quot;</span>           <span class="p">:</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="s2">&quot;freq&quot;</span>              <span class="p">:</span> <span class="s1">&#39;H&#39;</span><span class="p">,</span>
+    <span class="s2">&quot;add_ext_interp&quot;</span>    <span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="c1">#True,</span>
+    <span class="s2">&quot;variables_to_keep&quot;</span> <span class="p">:</span> <span class="p">[</span><span class="s1">&#39;salinity&#39;</span><span class="p">,</span> <span class="s1">&#39;temperature&#39;</span><span class="p">,</span> <span class="s1">&#39;density&#39;</span><span class="p">,</span> <span class="s1">&#39;depth&#39;</span><span class="p">,</span> <span class="s1">&#39;latitude&#39;</span><span class="p">,</span> <span class="s1">&#39;longitude&#39;</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="s1">&#39;MLD&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="s1">&#39;profile_direction&#39;</span><span class="p">,</span> <span class="s1">&#39;MLD_manual&#39;</span><span class="p">,</span> <span class="s1">&#39;profile_index&#39;</span><span class="p">],</span> <span class="c1">#if None it keeps the standard variables</span>
+<span class="p">}</span>
+<span class="c1"># Preprocess data</span>
+<span class="n">ds_398</span>                                                          <span class="o">=</span> <span class="n">proj</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">preprocess_data</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<span class="c1"># Interpolate ERA5 onto hourly positions of the glider</span>
+<span class="n">resample_time</span><span class="p">,</span> <span class="n">series_wind</span><span class="p">,</span> <span class="n">series_heat</span>                         <span class="o">=</span> <span class="n">proj</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">interpolate_onto_track</span><span class="p">(</span><span class="n">ds_398</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+
+<span class="c1"># Calculate vertical velocity variance</span>
+<span class="n">mld_var</span> <span class="o">=</span> <span class="s1">&#39;MLD_manual&#39;</span> <span class="c1">#or &#39;MLD&#39;</span>
+<span class="n">series_w_prime</span><span class="p">,</span> <span class="n">gap_mask</span><span class="p">,</span> <span class="n">intermediates</span>                         <span class="o">=</span> <span class="n">proj</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">get_wprime_timeseries_update_3</span><span class="p">(</span><span class="n">resample_time</span><span class="p">,</span><span class="n">ds_398</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">mld_var</span><span class="o">=</span><span class="n">mld_var</span><span class="p">)</span> <span class="c1"># max_gap_duration=np.timedelta64(1, &quot;h&quot;),</span>
+<span class="c1"># Calculate vertical velocity variance masking just before the interpolation (thus including more values from outside the ML)</span>
+<span class="n">series_w_prime_masklater</span><span class="p">,</span> <span class="n">_</span> <span class="p">,</span> <span class="n">intermediates_mask_later</span>          <span class="o">=</span> <span class="n">proj</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">get_wprime_timeseries_update_2</span><span class="p">(</span><span class="n">resample_time</span><span class="p">,</span><span class="n">ds_398</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">mld_var</span><span class="o">=</span><span class="n">mld_var</span><span class="p">)</span>
+<span class="c1"># Calculate vertical velocity variance without any masking</span>
+<span class="n">wprime_rms</span>                                                      <span class="o">=</span> <span class="n">proj</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">calculate_wprime</span><span class="p">(</span><span class="n">ds_398</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">return_mask</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </pre></div>
 </div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-(&lt;Figure size 800x400 with 1 Axes&gt;,
- &lt;Axes: title={&#39;center&#39;: &#39;RAPID 26°N - AMOC&#39;}, ylabel=&#39;overturning transport  [Sv]&#39;&gt;)
-</pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/demo-output_3_1.png" src="_images/demo-output_3_1.png" />
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+<span class="ansi-cyan-fg">Cell</span><span class="ansi-cyan-fg"> </span><span class="ansi-green-fg">In[3]</span><span class="ansi-green-fg">, line 14</span>
+<span class="ansi-green-fg">      4</span> resolution = <span class="ansi-green-fg">1</span>          <span style="color: rgb(95,135,135)"># Sampling resolution in seconds (needed to calc the minimum number of observations in a rolling window)</span>
+<span class="ansi-green-fg">      5</span> glidername= <span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">L1398</span><span class="ansi-yellow-fg">&#39;</span>     <span style="color: rgb(95,135,135)"># Name of the glider</span>
+<span class="ansi-green-fg">      7</span> config = {
+<span class="ansi-green-fg">      8</span>     <span class="ansi-yellow-fg">&#34;</span><span class="ansi-yellow-fg">rolling_window_outer</span><span class="ansi-yellow-fg">&#34;</span>     : <span class="ansi-yellow-fg">f</span><span class="ansi-yellow-fg">&#34;</span><span class="ansi-bold" style="color: rgb(175,95,135)">{</span>outer_window_min<span class="ansi-bold" style="color: rgb(175,95,135)">}</span><span class="ansi-yellow-fg">min</span><span class="ansi-yellow-fg">&#34;</span>,           <span style="color: rgb(95,135,135)"># 6H choosen by Steffen</span>
+<span class="ansi-green-fg">      9</span>     <span class="ansi-yellow-fg">&#34;</span><span class="ansi-yellow-fg">rolling_window_inner</span><span class="ansi-yellow-fg">&#34;</span>     : <span class="ansi-yellow-fg">f</span><span class="ansi-yellow-fg">&#34;</span><span class="ansi-bold" style="color: rgb(175,95,135)">{</span>inner_window_min<span class="ansi-bold" style="color: rgb(175,95,135)">}</span><span class="ansi-yellow-fg">min</span><span class="ansi-yellow-fg">&#34;</span>,           <span style="color: rgb(95,135,135)"># 1H, choosen by steffen&#39;s</span>
+<span class="ansi-green-fg">     10</span>     <span class="ansi-yellow-fg">&#34;</span><span class="ansi-yellow-fg">rolling_min_periods_outer</span><span class="ansi-yellow-fg">&#34;</span>: <span style="color: rgb(0,135,0)">int</span>(outer_window_min*min_perc*<span class="ansi-green-fg">60</span>),  <span style="color: rgb(95,135,135)"># Minimum number of observations within the outer rolling window (data before: in hours or see inner window)</span>
+<span class="ansi-green-fg">     11</span>     <span class="ansi-yellow-fg">&#34;</span><span class="ansi-yellow-fg">rolling_min_periods_inner</span><span class="ansi-yellow-fg">&#34;</span>: <span style="color: rgb(0,135,0)">int</span>((inner_window_min/<span class="ansi-green-fg">60</span>)*(<span class="ansi-green-fg">3600</span>*<span class="ansi-green-fg">1</span>/resolution)*min_perc),  <span style="color: rgb(95,135,135)"># Minimum number of observations within the inner rolling window (data before: in seconds or see most common time difference)</span>
+<span class="ansi-green-fg">     12</span>
+<span class="ansi-green-fg">     13</span>     <span class="ansi-yellow-fg">&#34;</span><span class="ansi-yellow-fg">var</span><span class="ansi-yellow-fg">&#34;</span>               : <span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">w</span><span class="ansi-yellow-fg">&#39;</span>,
+<span class="ansi-green-fg">---&gt; </span><span class="ansi-green-fg">14</span>     <span class="ansi-yellow-fg">&#34;</span><span class="ansi-yellow-fg">data_in</span><span class="ansi-yellow-fg">&#34;</span>           : <span class="ansi-yellow-bg">ds</span>,
+<span class="ansi-green-fg">     15</span>     <span class="ansi-yellow-fg">&#34;</span><span class="ansi-yellow-fg">data_wind</span><span class="ansi-yellow-fg">&#34;</span>         : ds_wind,
+<span class="ansi-green-fg">     16</span>     <span class="ansi-yellow-fg">&#34;</span><span class="ansi-yellow-fg">data_heat</span><span class="ansi-yellow-fg">&#34;</span>         : ds_heat,
+<span class="ansi-green-fg">     17</span>     <span class="ansi-yellow-fg">&#34;</span><span class="ansi-yellow-fg">start_time</span><span class="ansi-yellow-fg">&#34;</span>        : pd.to_datetime(<span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">2022-03-07T00:00:00</span><span class="ansi-yellow-fg">&#39;</span>),
+<span class="ansi-green-fg">     18</span>     <span class="ansi-yellow-fg">&#34;</span><span class="ansi-yellow-fg">end_time</span><span class="ansi-yellow-fg">&#34;</span>          : pd.to_datetime(<span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">2022-03-15T00:00:00</span><span class="ansi-yellow-fg">&#39;</span>),
+<span class="ansi-green-fg">     19</span>     <span class="ansi-yellow-fg">&#34;</span><span class="ansi-yellow-fg">interp_method</span><span class="ansi-yellow-fg">&#34;</span>     : <span class="ansi-yellow-fg">&#34;</span><span class="ansi-yellow-fg">linear</span><span class="ansi-yellow-fg">&#34;</span>,
+<span class="ansi-green-fg">     20</span>     <span class="ansi-yellow-fg">&#34;</span><span class="ansi-yellow-fg">depth_min</span><span class="ansi-yellow-fg">&#34;</span>         : <span class="ansi-green-fg">50</span>,  <span style="color: rgb(95,135,135)"># Drop upper 50m (wave effects, etc.)</span>
+<span class="ansi-green-fg">     21</span>     <span class="ansi-yellow-fg">&#34;</span><span class="ansi-yellow-fg">max_lag</span><span class="ansi-yellow-fg">&#34;</span>           : <span class="ansi-green-fg">24</span> * <span class="ansi-green-fg">3</span>,
+<span class="ansi-green-fg">     22</span>     <span class="ansi-yellow-fg">&#34;</span><span class="ansi-yellow-fg">freq</span><span class="ansi-yellow-fg">&#34;</span>              : <span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">H</span><span class="ansi-yellow-fg">&#39;</span>,
+<span class="ansi-green-fg">     23</span>     <span class="ansi-yellow-fg">&#34;</span><span class="ansi-yellow-fg">add_ext_interp</span><span class="ansi-yellow-fg">&#34;</span>    : <span class="ansi-bold" style="color: rgb(0,135,0)">False</span>, <span style="color: rgb(95,135,135)">#True,</span>
+<span class="ansi-green-fg">     24</span>     <span class="ansi-yellow-fg">&#34;</span><span class="ansi-yellow-fg">variables_to_keep</span><span class="ansi-yellow-fg">&#34;</span> : [<span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">salinity</span><span class="ansi-yellow-fg">&#39;</span>, <span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">temperature</span><span class="ansi-yellow-fg">&#39;</span>, <span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">density</span><span class="ansi-yellow-fg">&#39;</span>, <span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">depth</span><span class="ansi-yellow-fg">&#39;</span>, <span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">latitude</span><span class="ansi-yellow-fg">&#39;</span>, <span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">longitude</span><span class="ansi-yellow-fg">&#39;</span>, <span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">time</span><span class="ansi-yellow-fg">&#39;</span>, <span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">MLD</span><span class="ansi-yellow-fg">&#39;</span>, <span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">w</span><span class="ansi-yellow-fg">&#39;</span>, <span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">profile_direction</span><span class="ansi-yellow-fg">&#39;</span>, <span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">MLD_manual</span><span class="ansi-yellow-fg">&#39;</span>, <span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">profile_index</span><span class="ansi-yellow-fg">&#39;</span>], <span style="color: rgb(95,135,135)">#if None it keeps the standard variables</span>
+<span class="ansi-green-fg">     25</span> }
+<span class="ansi-green-fg">     26</span> <span style="color: rgb(95,135,135)"># Preprocess data</span>
+<span class="ansi-green-fg">     27</span> ds_398                                                          = proj.tools.preprocess_data(config)
+
+<span class="ansi-red-fg">NameError</span>: name &#39;ds&#39; is not defined
+</pre></div></div>
 </div>
-</div>
+</section>
+<section id="Plot-steps-of-calculating-the-vertical-water-velocity-variance">
+<h2>Plot steps of calculating the vertical water velocity variance<a class="headerlink" href="#Plot-steps-of-calculating-the-vertical-water-velocity-variance" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>Plot which part of the mixed layer gets masked</p></li>
+<li><p>Plot the corresponding vertical velocity data with the same masks</p></li>
+<li><p>Plot w’ = (w - ) with &lt;&gt;: inner window</p></li>
+<li><p>Plot final vertical velocity variance w’rms = sqrt(&lt;(w’)^2&gt;) with &lt;&gt;: outer window. # Red diamonds: also include here the alternative where we calculate sqrt(&lt;(w’)^2&gt;) right at the start and then mask (this contains some signal from outside the ML). # Blue line: if ds_hp is provided also plot the highpass filtered vertical velocity as reference (here 70m cutoff)</p></li>
+</ol>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">()</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;data&quot;</span> <span class="o">/</span> <span class="s2">&quot;temp.nc&quot;</span>
-<span class="n">writers</span><span class="o">.</span><span class="n">save_dataset</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">prompt_user</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ds_hp_sel</span> <span class="o">=</span> <span class="n">ds_hp</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="s1">&#39;profile_index&#39;</span> <span class="p">:</span> <span class="p">(</span><span class="n">ds_hp</span><span class="p">[</span><span class="s1">&#39;mid_times&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;start_time&#39;</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">ds_hp</span><span class="p">[</span><span class="s1">&#39;mid_times&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;end_time&#39;</span><span class="p">])},</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">proj</span><span class="o">.</span><span class="n">plotters</span><span class="o">.</span><span class="n">plot_lag_correlation_steps</span><span class="p">(</span><span class="n">intermediates</span><span class="p">,</span> <span class="n">ds_398</span><span class="p">,</span>
+                                                   <span class="n">wprime_rms</span><span class="o">=</span><span class="n">wprime_rms</span><span class="p">,</span>
+                                                   <span class="n">series_2</span> <span class="o">=</span> <span class="n">series_w_prime_masklater</span><span class="p">,</span>
+                                                   <span class="n">ds_hp</span> <span class="o">=</span> <span class="n">ds_hp_sel</span><span class="p">,</span>
+                                                   <span class="n">mld_var</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;MLD_manual&#39;</span><span class="p">,</span><span class="s1">&#39;MLD&#39;</span><span class="p">])</span>
+<span class="c1"># Set x limit to zoom in</span>
+<span class="c1">#ax[0].set_xlim(config[&#39;start_time&#39;], config[&#39;end_time&#39;])</span>
+<span class="c1"># ax[0].set_xlim(pd.to_datetime(&#39;2022-03-05T00:00:00&#39;), pd.to_datetime(&#39;2022-03-15T00:00:00&#39;))</span>
 </pre></div>
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
-</pre></div>
+<div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-True
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+<span class="ansi-cyan-fg">Cell</span><span class="ansi-cyan-fg"> </span><span class="ansi-green-fg">In[4]</span><span class="ansi-green-fg">, line 1</span>
+<span class="ansi-green-fg">----&gt; </span><span class="ansi-green-fg">1</span> ds_hp_sel = <span class="ansi-yellow-bg">ds_hp</span>.isel({<span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">profile_index</span><span class="ansi-yellow-fg">&#39;</span> : (ds_hp[<span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">mid_times</span><span class="ansi-yellow-fg">&#39;</span>] &gt;= config[<span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">start_time</span><span class="ansi-yellow-fg">&#39;</span>]) &amp; (ds_hp[<span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">mid_times</span><span class="ansi-yellow-fg">&#39;</span>] &lt;= config[<span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">end_time</span><span class="ansi-yellow-fg">&#39;</span>])}, drop=<span class="ansi-bold" style="color: rgb(0,135,0)">True</span>)
+<span class="ansi-green-fg">      2</span> fig, ax = proj.plotters.plot_lag_correlation_steps(intermediates, ds_398,
+<span class="ansi-green-fg">      3</span>                                                    wprime_rms=wprime_rms,
+<span class="ansi-green-fg">      4</span>                                                    series_2 = series_w_prime_masklater,
+<span class="ansi-green-fg">      5</span>                                                    ds_hp = ds_hp_sel,
+<span class="ansi-green-fg">      6</span>                                                    mld_var=[<span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">MLD_manual</span><span class="ansi-yellow-fg">&#39;</span>,<span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">MLD</span><span class="ansi-yellow-fg">&#39;</span>])
+<span class="ansi-green-fg">      7</span> <span style="color: rgb(95,135,135)"># Set x limit to zoom in</span>
+<span class="ansi-green-fg">      8</span> <span style="color: rgb(95,135,135)">#ax[0].set_xlim(config[&#39;start_time&#39;], config[&#39;end_time&#39;])</span>
+<span class="ansi-green-fg">      9</span> <span style="color: rgb(95,135,135)"># ax[0].set_xlim(pd.to_datetime(&#39;2022-03-05T00:00:00&#39;), pd.to_datetime(&#39;2022-03-15T00:00:00&#39;))</span>
+
+<span class="ansi-red-fg">NameError</span>: name &#39;ds_hp&#39; is not defined
 </pre></div></div>
 </div>
+</section>
+<section id="Calculate-&amp;-Plot-time-lag-correlations">
+<h2>Calculate &amp; Plot time-lag correlations<a class="headerlink" href="#Calculate-&-Plot-time-lag-correlations" title="Link to this heading"></a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">lags_heat</span><span class="p">,</span> <span class="n">corrs_heat</span>       <span class="o">=</span> <span class="n">proj</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">lag_correlation</span><span class="p">(</span><span class="n">series_w_prime</span><span class="p">,</span> <span class="n">series_heat</span><span class="p">,</span> <span class="n">max_lag</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;max_lag&#39;</span><span class="p">])</span>
+<span class="n">lags_wind</span><span class="p">,</span> <span class="n">corrs_wind</span>       <span class="o">=</span> <span class="n">proj</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">lag_correlation</span><span class="p">(</span><span class="n">series_w_prime</span><span class="p">,</span> <span class="n">series_wind</span><span class="p">,</span> <span class="n">max_lag</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;max_lag&#39;</span><span class="p">])</span>
+<span class="c1"># Plot the correlation</span>
+<span class="n">corr_dict2</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;lags&#39;</span><span class="p">:</span>            <span class="p">[</span><span class="n">lags_wind</span><span class="p">,</span> <span class="n">lags_heat</span><span class="p">],</span>
+             <span class="s1">&#39;correlations&#39;</span><span class="p">:</span>     <span class="p">[</span><span class="n">corrs_wind</span><span class="p">,</span> <span class="n">corrs_heat</span><span class="p">],</span>
+             <span class="s1">&#39;labels&#39;</span><span class="p">:</span>           <span class="p">[</span><span class="s1">&#39;wind speed&#39;</span><span class="p">,</span> <span class="s1">&#39;heat flux&#39;</span><span class="p">],}</span>
+<span class="n">plot_dict2</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ylim&#39;</span><span class="p">:(</span><span class="o">-</span><span class="mf">0.2</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="s1">&#39;colors&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;grey&#39;</span><span class="p">,</span><span class="s1">&#39;orange&#39;</span><span class="p">],</span> <span class="s1">&#39;xlim&#39;</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mi">24</span><span class="o">*</span><span class="mi">3</span><span class="p">,</span> <span class="mi">24</span><span class="o">*</span><span class="mi">3</span><span class="p">]}</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">proj</span><span class="o">.</span><span class="n">plotters</span><span class="o">.</span><span class="n">plot_corr</span><span class="p">(</span><span class="n">corr_dict2</span><span class="p">,</span> <span class="n">plot_dict2</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+<span class="ansi-cyan-fg">Cell</span><span class="ansi-cyan-fg"> </span><span class="ansi-green-fg">In[5]</span><span class="ansi-green-fg">, line 1</span>
+<span class="ansi-green-fg">----&gt; </span><span class="ansi-green-fg">1</span> lags_heat, corrs_heat       = <span class="ansi-yellow-bg">proj</span>.tools.lag_correlation(series_w_prime, series_heat, max_lag=config[<span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">max_lag</span><span class="ansi-yellow-fg">&#39;</span>])
+<span class="ansi-green-fg">      2</span> lags_wind, corrs_wind       = proj.tools.lag_correlation(series_w_prime, series_wind, max_lag=config[<span class="ansi-yellow-fg">&#39;</span><span class="ansi-yellow-fg">max_lag</span><span class="ansi-yellow-fg">&#39;</span>])
+<span class="ansi-green-fg">      3</span> <span style="color: rgb(95,135,135)"># Plot the correlation</span>
+
+<span class="ansi-red-fg">NameError</span>: name &#39;proj&#39; is not defined
+</pre></div></div>
+</div>
+</section>
+<section id="Plot-time-series-against-each-other">
+<h2>Plot time series against each other<a class="headerlink" href="#Plot-time-series-against-each-other" title="Link to this heading"></a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">proj</span><span class="o">.</span><span class="n">plotters</span><span class="o">.</span><span class="n">plot_series_timelag</span><span class="p">(</span><span class="n">series_w_prime</span><span class="p">,</span> <span class="n">series_heat</span><span class="p">,</span> <span class="n">series_wind</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+<span class="ansi-cyan-fg">Cell</span><span class="ansi-cyan-fg"> </span><span class="ansi-green-fg">In[6]</span><span class="ansi-green-fg">, line 1</span>
+<span class="ansi-green-fg">----&gt; </span><span class="ansi-green-fg">1</span> fig, ax = <span class="ansi-yellow-bg">proj</span>.plotters.plot_series_timelag(series_w_prime, series_heat, series_wind)
+
+<span class="ansi-red-fg">NameError</span>: name &#39;proj&#39; is not defined
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+</section>
 </section>
 
 

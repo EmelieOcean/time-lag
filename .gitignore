@@ -1,6 +1,6 @@
 setup.sh
 */_version.py
-data/temp.nc
+data/*.nc
 
 
 logs/*log

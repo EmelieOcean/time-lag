@@ -6,7 +6,7 @@ import xarray as xr
 
 from template_project import logger
 from template_project.logger import log_info
-from template_project.read_rapid import read_rapid
+# from template_project.read_rapid import read_rapid
 
 log = logger.log
 
@@ -31,7 +31,7 @@ def _get_reader(array_name: str):
 
     """
     readers = {
-        "rapid": read_rapid,
+        "churchill": read_glider,
     }
     try:
         return readers[array_name.lower()]
@@ -41,11 +41,11 @@ def _get_reader(array_name: str):
         )
 
 
-def load_sample_dataset(array_name: str = "rapid") -> xr.Dataset:
+def load_sample_dataset(array_name: str = "churchill") -> xr.Dataset:
     """Load a sample dataset for quick testing.
 
     Currently supports:
-    - 'rapid' : loads the 'RAPID_26N_TRANSPORT.nc' file
+    - 'churchill' : loads the '20240524-noc-churchill398-20211210_MLD_demo.nc' file
 
     Parameters
     ----------
@@ -63,8 +63,8 @@ def load_sample_dataset(array_name: str = "rapid") -> xr.Dataset:
         If the array_name is not recognised.
 
     """
-    if array_name.lower() == "rapid":
-        sample_file = "moc_transports.nc"
+    if array_name.lower() == "churchill":
+        sample_file = "20240524-noc-churchill398-20211210_MLD_demo.nc"
         datasets = load_dataset(
             array_name=array_name,
             file_list=sample_file,
@@ -78,7 +78,7 @@ def load_sample_dataset(array_name: str = "rapid") -> xr.Dataset:
 
     raise ValueError(
         f"Sample dataset for array '{array_name}' is not defined. "
-        "Currently only 'rapid' is supported.",
+        "Currently only 'churchill' is supported.",
     )
 
 
@@ -96,7 +96,7 @@ def load_dataset(
     ----------
     array_name : str
         The name of the observing array to load. Options are:
-        - 'rapid' : RAPID 26N array
+        - 'churchill' : glider data from churchill398, Canada.
     source : str, optional
         URL or local path to the data source.
         If None, the reader-specific default source will be used.
@@ -185,3 +185,21 @@ def _summarise_datasets(datasets: list, array_name: str):
 
     # Write to log
     log_info("\n" + summary)
+
+
+def read_glider(array_name: str = "churchill"):
+    datadirec = '../data/'
+    # L1 data containing vertical velocities
+    L1398_w = xr.load_dataset(datadirec + '20240524-noc-churchill398-20211210_MLD_demo.nc')
+    return L1398_w
+
+def read_ERA5():
+    datadirec = '../data/'
+    ds_wind = xr.open_dataset(datadirec + 'wind_data_labsea_2021_2022_demo.nc')
+    ds_heat = xr.open_dataset(datadirec + 'heat_data_labsea_2021_2022_demo.nc')
+    return ds_wind, ds_heat
+
+def read_hp_w():
+    datadirec = '../data/'
+    ds = xr.load_dataset(datadirec + '20240524-noc-churchill398-20211210_w_uniform_70m_highpass_demo.nc')
+    return ds

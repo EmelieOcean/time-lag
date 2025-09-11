@@ -521,7 +521,7 @@ def get_wprime_timeseries_update_3(resample_time, ds, config,
 
     # 4) Interpolate segments between gaps
     wprime_interp_seg = _interpolate_segments(
-        wprime2, time_enters_mld, time_leaves_mld, resample_time, interp_method, name=name
+        wprime2, time_enters_mld, time_leaves_mld, resample_time, interp_method, config, name=name
     )
     if debug:
         intermediates['wprime_interp_seg'] = wprime_interp_seg
@@ -539,7 +539,116 @@ def get_wprime_timeseries_update_3(resample_time, ds, config,
         return series_w_prime
     
 
+def get_wprime_timeseries_update_3_lastpart(resample_time, ds, config, 
+                                   return_mask=True, debug=True, name='w_prime', is_down=1, max_gap_duration=np.timedelta64(1, "h"), mld_var='MLD', fill_value_mld=None):
+    """Function to calculate the vertical velocity variance and interpolate to resample time excluding any data from outside the mixed layer (ML).
+    wprime_rms = sqrt(<wprime^2>)=sqrt(<(w-<w>)^2>), w: vertical velocity
+    We follow these steps:
+    1) Calculate rolling_inner(w) and substract from w: (w-<w>)
+    2) Mask out data below the MLD
+    3) Identify time gaps and mask the data if
+        the glider leaves the ML for a time similar to the inner rolling window, 
+        then also mask surrounding half inner rolling window of data before and after leaving the ML
+    4) Do the outer rolling window on the wprime: sqrt(<(w-<w>)^2>)
+    5) Interpolate segmentwise on the time array resample_time
 
+    Parameters:
+    ------------
+    resample_time:  DatetimeIndex
+                    time array with regular time steps
+    ds:     xarray.Dataset
+                    dataset with the data, containing 'w' variable (default) or other variable specified in config as "var"
+    config:         dict
+                    Configuration parameters for rolling windows and minimum periods
+                    contains: 'interp_method', 'rolling_window_inner', 'rolling_window_outer', 'rolling_min_periods_inner', 'rolling_min_periods_outer', 'var'
+    return_mask:    boolean
+                    whether to return a mask of gaps for the data within the mixed layer which have no influence from data outside the MLD via the inner rolling window
+                    shape is different from ds as it is only for the data within the MLD and without nans (to align: ds[var][~is_nan][is_below][~gap_mask])
+    debug:          boolean 
+                    whether to return intermediate results for debugging
+    name:           str
+                    name of the variable to be returned (default is 'w_prime')
+    is_down:        int
+                    direction index of the glider when it is going down (default is 1, meaning down)
+    max_gap_duration: np.timedelta64
+                    maximum duration of the glider to be outside the ML to be considered a gap(default is inner rolling window duration)
+    mld_var:        str
+                    name of the mixed layer depth variable in the dataset (default is 'MLD')
+    fill_value_mld: float or None
+                    value to fill NaN values in the mixed layer depth variable (default is None, meaning no filling)
+    
+    Returns:
+    ------------
+    series_w_prime: pd.Series
+                    Series of wprime values interpolated onto resample_time, dimensions: time, name: 'w_prime'
+    gap_mask:       np.ndarray, optional
+                    boolean mask of gaps exceeding an hour in the data within the mixed layer, shape is different from ds as it is only for the data within the MLD and without nans
+    intermediates:  dict, optional
+                    dictionary with intermediate results for debugging, contains:
+                    - 'wprime_inner': wprime values calculated in the inner rolling window
+                    - 'is_nan': boolean mask of NaN values in the vertical velocity variable
+                    - 'wprime_in_mld': wprime values within the mixed layer
+                    - 'is_below': boolean mask of data below the mixed layer depth
+                    - 'time_leaves_mld': times when the glider leaves the mixed layer
+                    - 'time_enters_mld': times when the glider enters the mixed layer
+                    - 'gap_mask': boolean mask of gaps exceeding an hour in the data within the mixed layer
+                    - 'wprime_outer': wprime values calculated in the outer rolling window
+                    - 'wprime_interp_seg': wprime values interpolated onto resample_time
+    """
+    intermediates = {} if debug else None
+
+    interp_method = config['interp_method']
+    max_gap_duration = config['rolling_window_inner'] if max_gap_duration is None else max_gap_duration  # Use the inner rolling window duration if not specified
+
+    # 0) Calculate wprime: (w-<w>)2
+    var                 = config.get("var", 'w') #default variable of vertical velocity
+    # Mask out nans in w
+    is_nan                                     = np.isnan(ds[var]) 
+    wprime_inner = xr.DataArray(ds[var].values[~is_nan]**2, coords=[ds.time.values[~is_nan]], dims=["time"], name='w_prime_squared')
+    
+    # wprime_inner, is_nan = calculate_wprime_innerwindow(ds, config, return_mask=return_mask)
+    if debug:
+        intermediates['wprime_inner'] = wprime_inner
+        intermediates['is_nan'] = is_nan
+
+    # 1) Mask out data below the MLD
+    is_below = _mask_below_mld(ds, is_nan, mld_var=mld_var, fill_value=fill_value_mld)
+    wprime_in_mld = wprime_inner[is_below]
+    if debug:
+        intermediates['wprime_in_mld'] = wprime_in_mld
+        intermediates['is_below'] = is_below
+
+    # 2) Identify time gaps and mask surrounding data
+    direction_in_mld = ds['profile_direction'][~is_nan][is_below] # get only data in the ML and witout nans
+    time_leaves_mld, time_enters_mld, gap_mask = _get_gap_mask(wprime_in_mld, direction_in_mld, is_down=is_down, max_gap_duration=max_gap_duration)
+    if debug:
+        intermediates['time_leaves_mld'] = time_leaves_mld
+        intermediates['time_enters_mld'] = time_enters_mld
+        intermediates['gap_mask'] = gap_mask
+
+    # 3) Do the outer rolling window on the wprime
+    wprime2 = calculate_wprime_outerwindow(wprime_in_mld[~gap_mask], config)
+    if debug:
+        intermediates['wprime_outer'] = wprime2
+
+    # 4) Interpolate segments between gaps
+    wprime_interp_seg = _interpolate_segments(
+        wprime2, time_enters_mld, time_leaves_mld, resample_time, interp_method, config, name=name
+    )
+    if debug:
+        intermediates['wprime_interp_seg'] = wprime_interp_seg
+
+    # 5) Convert to pandas Series
+    series_w_prime = wprime_interp_seg.to_pandas()[name]
+    
+    if return_mask and debug:
+        return series_w_prime, gap_mask, intermediates
+    elif return_mask:
+        return series_w_prime, gap_mask
+    elif debug:
+        return series_w_prime, intermediates
+    else:
+        return series_w_prime
     
 def get_wprime_timeseries_update_2(resample_time, ds, config, 
                                    return_mask=True, debug=True, name='w_prime', is_down=1, max_gap_duration=np.timedelta64(1, "h"), mld_var='MLD', fill_value_mld=None):
@@ -626,7 +735,7 @@ def get_wprime_timeseries_update_2(resample_time, ds, config,
 
     # 3) Interpolate segments between gaps
     wprime_interp_seg = _interpolate_segments(
-        wprime_in_mld[~gap_mask], time_enters_mld, time_leaves_mld, resample_time, interp_method, name=name
+        wprime_in_mld[~gap_mask], time_enters_mld, time_leaves_mld, resample_time, interp_method, config, name=name
     )
     if debug:
         intermediates['wprime_interp_seg'] = wprime_interp_seg
@@ -729,7 +838,7 @@ def _get_gap_mask(wprime_in_mld, direction_in_mld=None, is_down=1, max_gap_durat
 
 
 
-def _interpolate_segments(wprime_in_mld, time_enters_mld, time_leaves_mld, resample_time, interp_method, name='w_prime'):
+def _interpolate_segments(wprime_in_mld, time_enters_mld, time_leaves_mld, resample_time, interp_method, config, name='w_prime'):
     """ This function takes the wprime_in_mld data and interpolates it onto the resample_time array, 
     segmenting the data based on when the glider enters and leaves the mixed layer depth (MLD).
 
@@ -745,6 +854,8 @@ def _interpolate_segments(wprime_in_mld, time_enters_mld, time_leaves_mld, resam
                             Time array with regular time steps to interpolate onto.
         interp_method:      str
                             Interpolation method to use (e.g., 'linear', 'nearest').
+        config:             dict,
+                            Start and end time of the full segment, to add start_time and end_time at beginning and end
         name:               str, optional
                             Name of the variable to be returned (default is 'w_prime').
     Returns:
@@ -757,6 +868,15 @@ def _interpolate_segments(wprime_in_mld, time_enters_mld, time_leaves_mld, resam
         coords={'time': resample_time},
         data_vars={name: ('time', np.nan * np.ones(len(resample_time)))}
     )
+
+    # Remove half-dives:
+    # - if we leave before ever entering, add start_time as time_enter
+    # - if we enter but never leave, add end_time as time_leave
+    if len(time_leaves_mld) and len(time_enters_mld):
+        if time_leaves_mld[0] < time_enters_mld[0]:
+            time_enters_mld = np.append(np.datetime64(config['start_time']),time_enters_mld)
+        if time_enters_mld[-1] > time_leaves_mld[-1]:
+            time_leaves_mld= np.append(time_leaves_mld, np.datetime64(config['end_time']))
 
     for i in range(len(time_enters_mld) - 1):
         seg = wprime_in_mld.isel(time=(

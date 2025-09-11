@@ -187,19 +187,16 @@ def _summarise_datasets(datasets: list, array_name: str):
     log_info("\n" + summary)
 
 
-def read_glider(array_name: str = "churchill"):
-    datadirec = '../data/'
+def read_glider(array_name: str = "churchill", datadirec = '../data/'):
     # L1 data containing vertical velocities
     L1398_w = xr.load_dataset(datadirec + '20240524-noc-churchill398-20211210_MLD_demo.nc')
     return L1398_w
 
-def read_ERA5():
-    datadirec = '../data/'
+def read_ERA5(datadirec = '../data/'):
     ds_wind = xr.open_dataset(datadirec + 'wind_data_labsea_2021_2022_demo.nc')
     ds_heat = xr.open_dataset(datadirec + 'heat_data_labsea_2021_2022_demo.nc')
     return ds_wind, ds_heat
 
-def read_hp_w():
-    datadirec = '../data/'
+def read_hp_w(datadirec = '../data/'):
     ds = xr.load_dataset(datadirec + '20240524-noc-churchill398-20211210_w_uniform_70m_highpass_demo.nc')
     return ds

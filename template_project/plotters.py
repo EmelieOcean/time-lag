@@ -51,7 +51,7 @@ def plot_corr(corr_dict, plot_dict, fig=None, ax=None):
     for i, (lags, correlations) in enumerate(zip(lag_sets, correlation_sets)):
         ax.plot(lags, correlations, color=colors[i], label=labels[i], marker=marker)
         ax.plot(lags, correlations, color=colors[i])
-    ax.legend()
+    ax.legend(loc='upper left')
 
     # Draw horizontal and vertical reference lines at zero
     ax.axhline(0, color='k', linestyle='--')

@@ -599,6 +599,7 @@ def get_wprime_timeseries_update_3_lastpart(resample_time, ds, config,
 
     interp_method = config['interp_method']
     max_gap_duration = config['rolling_window_inner'] if max_gap_duration is None else max_gap_duration  # Use the inner rolling window duration if not specified
+    mask_around = config['mask_around']
 
     # 0) Calculate wprime: (w-<w>)2
     var                 = config.get("var", 'w') #default variable of vertical velocity
@@ -620,7 +621,9 @@ def get_wprime_timeseries_update_3_lastpart(resample_time, ds, config,
 
     # 2) Identify time gaps and mask surrounding data
     direction_in_mld = ds['profile_direction'][~is_nan][is_below] # get only data in the ML and witout nans
-    time_leaves_mld, time_enters_mld, gap_mask = _get_gap_mask(wprime_in_mld, direction_in_mld, is_down=is_down, max_gap_duration=max_gap_duration)
+    wprime_in_mld['profile_index'] = ds['profile_index'][~is_nan][is_below]
+    #update 2025-09-16
+    time_leaves_mld, time_enters_mld, gap_mask = _get_gap_mask_newnew(wprime_in_mld, direction_in_mld, is_down=is_down, max_gap_duration=max_gap_duration, mask_around=mask_around)
     if debug:
         intermediates['time_leaves_mld'] = time_leaves_mld
         intermediates['time_enters_mld'] = time_enters_mld
@@ -780,6 +783,108 @@ def _mask_below_mld(ds, is_nan, mld_var='MLD', fill_value=None):
     is_below = abs(ds.depth[~is_nan]) < abs(MLD)
     return is_below
 
+def _get_gap_mask_new(wprime_in_mld, direction_in_mld=None, is_down=1,
+                  max_gap_duration=np.timedelta64(1, "h")):
+    """
+    Identify gaps when the glider leaves the mixed layer depth (MLD),
+    using profile_index blocks to group consecutive dives in the MLD.
+    
+    Parameters
+    ----------
+    wprime_in_mld : xarray.DataArray
+        DataArray with wprime values inside the MLD. Must have dims 'time' and 'profile_index'.
+    direction_in_mld : xarray.DataArray, optional
+        DataArray with the dive direction (same time dimension as wprime_in_mld).
+    is_down : int, optional
+        Value indicating when the glider is diving downwards. Default is 1.
+    max_gap_duration : np.timedelta64, optional
+        Maximum allowed time gap to consider continuous presence in the MLD.
+    
+    Returns
+    -------
+    time_leaves_mld : np.ndarray
+        Times when the glider leaves the MLD.
+    time_enters_mld : np.ndarray
+        Times when the glider enters the MLD.
+    gap_mask : np.ndarray
+        Boolean mask of times within half-gap before and after the gap.
+    """
+    import numpy as np
+    import xarray as xr
+
+    half_gap_duration = max_gap_duration.astype('timedelta64[s]') / 2
+
+    # Get all profile indices that actually have data in the MLD
+    valid_profiles = wprime_in_mld['profile_index'].values[
+        ~wprime_in_mld.isnull().all('time')
+    ]
+    valid_profiles = np.unique(valid_profiles)
+
+    if len(valid_profiles) == 0:
+        # No data in MLD at all
+        empty = np.array([], dtype='datetime64[ns]')
+        return empty, empty, np.zeros(wprime_in_mld.time.shape, dtype=bool)
+
+    # Get first and last time in each profile
+    profile_groups = wprime_in_mld.groupby('profile_index')
+
+    profile_times = []
+    for pid, grp in profile_groups:
+        if grp.notnull().any():
+            tmin = grp.time.min().item()
+            tmax = grp.time.max().item()
+            profile_times.append((pid, tmin, tmax))
+    profile_times = sorted(profile_times, key=lambda x: x[1])  # sort by time
+
+    # Merge consecutive profiles if gap < max_gap_duration
+    time_enters_mld = []
+    time_leaves_mld = []
+
+    block_start = profile_times[0][1]
+    last_end = profile_times[0][2]
+
+    for _, tmin, tmax in profile_times[1:]:
+        if (tmin - last_end) > max_gap_duration:
+            # close old block
+            time_enters_mld.append(block_start)
+            time_leaves_mld.append(last_end)
+            # start new block
+            block_start = tmin
+        last_end = tmax
+
+    # append last block
+    time_enters_mld.append(block_start)
+    time_leaves_mld.append(last_end)
+
+    time_enters_mld = np.array(time_enters_mld, dtype='datetime64[ns]')
+    time_leaves_mld = np.array(time_leaves_mld, dtype='datetime64[ns]')
+
+    # # Optional: filter by direction_in_mld (only consider leaving when down)
+    # if direction_in_mld is not None:
+    #     down_mask = direction_in_mld == is_down
+    #     # keep only leaves where at least one point near that time is down
+    #     valid_leaves = []
+    #     valid_enters = []
+    #     for enter, leave in zip(time_enters_mld, time_leaves_mld):
+    #         near_leave = (wprime_in_mld.time >= leave - np.timedelta64(5,'m')) \
+    #                    & (wprime_in_mld.time <= leave + np.timedelta64(5,'m'))
+    #         if down_mask.where(near_leave).any():
+    #             valid_enters.append(enter)
+    #             valid_leaves.append(leave)
+    #     time_enters_mld = np.array(valid_enters, dtype='datetime64[ns]')
+    #     time_leaves_mld = np.array(valid_leaves, dtype='datetime64[ns]')
+
+    # Build gap mask
+    time_leaves_mld_before = time_leaves_mld - half_gap_duration
+    time_enters_mld_after = time_enters_mld + half_gap_duration
+
+    gap_mask = np.logical_or.reduce([
+        (wprime_in_mld.time <= after) & (wprime_in_mld.time >= before)
+        for before, after in zip(time_leaves_mld_before, time_enters_mld_after)
+    ]) if len(time_leaves_mld) else np.zeros(wprime_in_mld.time.shape, dtype=bool)
+
+    return time_leaves_mld, time_enters_mld, gap_mask
+
 
 def _get_gap_mask(wprime_in_mld, direction_in_mld=None, is_down=1, max_gap_duration=np.timedelta64(1, "h")):
     """Identify the gaps when the glider leaves the mixed layer depth (MLD) and mask out half of the gap duration before and after the gap.
@@ -836,7 +941,61 @@ def _get_gap_mask(wprime_in_mld, direction_in_mld=None, is_down=1, max_gap_durat
     return time_leaves_mld, time_enters_mld, gap_mask
 
 
+def _get_gap_mask_newnew(wprime_in_mld, direction_in_mld=None, is_down=1, max_gap_duration=np.timedelta64(1, "h"), mask_around=np.timedelta64(5, "m")):
+    """Identify the gaps when the glider leaves the mixed layer depth (MLD) and mask out half of the gap duration before and after the gap.
+    This function assumes that the glider is leaving the MLD when the time difference between two consecutive measurements exceeds the max_gap_duration and 
+    if direction is provided, it checks if the direction is 'down' (is_down=1).
+    
+    Parameters:
+    ------------
+        wprime_in_mld:      xarray.DataArray
+                            DataArray containing wprime values masked within the mixed layer depth (MLD). dimensions should include 'time'.
+        direction_in_mld :  xarray.DataArray, optional
+                            DataArray containing the direction of the glider in the MLD. If provided, it should have the same time dimension as wprime_in_mld.
+        is_down :           int, optional
+                            Value indicating when the glider is diving downwards. Default is 1 (for slocum).
+    
+    Returns:
+    ------------
+        time_leaves_mld :   np.ndarray
+                            Array of times when the glider leaves the MLD.
+        time_enters_mld :   np.ndarray
+                            Array of times when the glider enters the MLD again.
+        gap_mask :          np.ndarray
+                            Boolean mask indicating where gaps exist in the data, with half of the gap duration masked before and after the gap.
+    """
+    # Settings
+    half_gap_duration = mask_around.astype('timedelta64[s]') / 2 #max_gap_duration.astype('timedelta64[s]') / 2 # Cast into seconds before dividing to avoid truncation errors
+    times = wprime_in_mld.time.values
+    # Calculate the time difference between consecutive measurements in the mld
+    time_diff = np.diff(times)
 
+    # Boolean array marking where a gap occurs (segment ends before this index+1)
+    gap_idx = np.where(time_diff > max_gap_duration)[0].astype(int)
+
+    # segment boundaries are between times[i] and times[i+1]
+    # build start and end time arrays
+    seg_starts = np.squeeze([np.r_[0, gap_idx + 1]])     # add first time at start
+    seg_ends   = np.squeeze([np.r_[gap_idx, len(times)-1]])  # add last time at end
+
+    # Get the times when the glider leaves and enters the MLD
+    time_leaves_mld = times[seg_ends] #using slice(None, -1) to align with time_diff
+    time_enters_mld = times[seg_starts]
+
+    # Mask out half of the gap duration before and after the gap
+    time_leaves_mld_before = time_leaves_mld - half_gap_duration
+    time_enters_mld_after = time_enters_mld + half_gap_duration
+
+    #print(time_leaves_mld_before.shape, time_enters_mld_after.shape)
+    #print(wprime_in_mld.time.shape)
+
+    # Create a mask for the time range where the glider is within half of the gap duration before and after being outside of the MLD
+    gap_mask = np.logical_or.reduce([
+        (wprime_in_mld.time <= after) & (wprime_in_mld.time >= before)
+        for before, after in zip(time_leaves_mld_before, time_enters_mld_after)
+    ])
+
+    return time_leaves_mld, time_enters_mld, gap_mask
 
 def _interpolate_segments(wprime_in_mld, time_enters_mld, time_leaves_mld, resample_time, interp_method, config, name='w_prime'):
     """ This function takes the wprime_in_mld data and interpolates it onto the resample_time array, 
@@ -878,14 +1037,14 @@ def _interpolate_segments(wprime_in_mld, time_enters_mld, time_leaves_mld, resam
         if time_enters_mld[-1] > time_leaves_mld[-1]:
             time_leaves_mld= np.append(time_leaves_mld, np.datetime64(config['end_time']))
 
-    for i in range(len(time_enters_mld) - 1):
+    for i in range(len(time_enters_mld)):
         seg = wprime_in_mld.isel(time=(
             (wprime_in_mld.time >= time_enters_mld[i]) &
-            (wprime_in_mld.time <= time_leaves_mld[i + 1])
+            (wprime_in_mld.time <= time_leaves_mld[i])
         ), drop=True)
 
         next_full_hour = (time_enters_mld[i] + pd.Timedelta(hours=0)).ceil('H')
-        last_full_hour = (time_leaves_mld[i + 1] + pd.Timedelta(hours=0)).floor('H')
+        last_full_hour = (time_leaves_mld[i] + pd.Timedelta(hours=0)).floor('H')
         full_hours = pd.date_range(start=next_full_hour, end=last_full_hour, freq='H')
 
         if len(full_hours) == 0 or seg.time.size == 0:
